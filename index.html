@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SIWAN RIDER • Nasar</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:system-ui}
+body{background:#0f0f0f;color:#fff;display:flex;flex-direction:column;height:100vh}
+#top{padding:12px 16px;display:flex;justify-content:space-between;background:#171717;border-bottom:1px solid #333}
+#logo{font-weight:900;background:linear-gradient(135deg,#a855f7,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+#mapBar{height:110px;background:#fff;display:flex;overflow-x:auto;gap:8px;padding:8px;align-items:center;border-bottom:2px solid #a855f7}
+.place{min-width:85px;height:90px;background:#f5f0e8;border-radius:12px;display:grid;place-items:center;text-align:center;font-size:11px;font-weight:800;color:#333;border:2px solid transparent;flex-shrink:0}
+.place.active{border-color:#a855f7;background:#ede9ff;color:#6d28d9;transform:scale(1.05)}
+.place.done{background:#d1fae5;border-color:#10b981}
+#game{flex:1;position:relative;background:#0a0a1a;display:grid;place-items:center;overflow:hidden}
+canvas{background:#111;border-radius:12px;border:1px solid #333}
+#ctrls{position:absolute;bottom:15px;width:100%;display:flex;justify-content:space-between;padding:0 20px}
+.btn{width:65px;height:65px;border-radius:50%;background:rgba(255,255,255,0.15);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.2);display:grid;place-items:center;font-size:26px}
+#msg{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.9);padding:22px;border-radius:18px;text-align:center;border:1px solid #444;display:none}
+#msg button{margin-top:12px;padding:10px 24px;border-radius:30px;border:none;background:linear-gradient(135deg,#a855f7,#ec4899);color:#fff;font-weight:800}
+</style>
+</head>
+<body>
+<div id="top">
+<div id="logo">🏍️ SIWAN RIDER • MADE BY NASAR</div>
+<div id="score" style="background:#a855f7;padding:5px 12px;border-radius:20px;font-weight:800">0 KM</div>
+</div>
+<div id="mapBar">
+<div class="place" id="p-mairwa">MAIRWA<br>🏁 Start</div>
+<div class="place" id="p-jiradai">JIRADAI</div>
+<div class="place" id="p-darauli">DARAULI</div>
+<div class="place" id="p-siwan">⭐ SIWAN</div>
+<div class="place" id="p-goriakothi">GORIAKOTHI</div>
+<div class="place" id="p-bhagwanpur">BHAGWANPUR</div>
+<div class="place" id="p-barharia">BARHARIA</div>
+<div class="place" id="p-siswan">SISWAN<br>🏆 Finish</div>
+</div>
+<div id="game">
+<canvas id="c" width="360" height="480"></canvas>
+<div id="ctrls"><div class="btn" id="l">◀</div><div class="btn" id="r">▶</div></div>
+<div id="msg"><h3 id="mt">SIWAN RIDER</h3><p id="ms">Mairwa se Siswan tak NH-531 pe bhag!</p><button onclick="start()">START 🏍️</button></div>
+</div>
+
+<script>
+const canvas=document.getElementById('c'), ctx=canvas.getContext('2d');
+const places=["mairwa","jiradai","darauli","siwan","goriakothi","bhagwanpur","barharia","siswan"];
+let current=0, score=0, bike={x:160,w:36}, obs=[], speed=3, keys={}, running=false;
+
+function start(){
+ current=0; score=0; obs=[]; speed=3; running=true;
+ updateMap(); document.getElementById('msg').style.display='none'; loop();
+}
+function updateMap(){
+ document.querySelectorAll('.place').forEach(p=>p.classList.remove('active','done'));
+ places.forEach((pl,i)=>{
+  let el=document.getElementById('p-'+pl);
+  if(i<current) el.classList.add('done');
+  if(i==current) el.classList.add('active');
+ });
+ document.getElementById('score').innerText=score+" KM";
+ if(current>=places.length-1){
+  running=false; document.getElementById('mt').innerText="JEET GAYA! 🏆";
+  document.getElementById('ms').innerText=`Pure Siwan district ghoom liya! ${score} KM`;
+  document.getElementById('msg').style.display='block';
+ }
+}
+function loop(){
+ if(!running) return;
+ ctx.fillStyle='#0f1320'; ctx.fillRect(0,0,360,480);
+ // NH-531 road
+ ctx.fillStyle='#1e293b'; ctx.fillRect(90,0,180,480);
+ ctx.strokeStyle='#fbbf24'; ctx.setLineDash([20,20]); ctx.lineDashOffset=-score*2;
+ ctx.beginPath(); ctx.moveTo(180,0); ctx.lineTo(180,480); ctx.stroke(); ctx.setLineDash([]);
+ ctx.strokeStyle='rgba(255,255,255,0.2)'; ctx.beginPath(); ctx.moveTo(90,0); ctx.lineTo(90,480); ctx.moveTo(270,0); ctx.lineTo(270,480); ctx.stroke();
+
+ if(keys.l) bike.x-=6; if(keys.r) bike.x+=6;
+ bike.x=Math.max(95,Math.min(230,bike.x));
+
+ if(Math.random()<0.03){ obs.push({x:[100,160,220][Math.floor(Math.random()*3)],y:-60,w:40,h:60}) }
+
+ obs.forEach(o=>{
+  o.y+=speed; ctx.fillStyle='#ec4899'; ctx.fillRect(o.x,o.y,o.w,o.h);
+  if(bike.x < o.x+o.w && bike.x+bike.w > o.x && 400 < o.y+o.h && 400+60 > o.y){
+   running=false; document.getElementById('mt').innerText="CRASH! 💥"; document.getElementById('ms').innerText=`${places[current].toUpperCase()} me atak gaya! Score ${score} KM`; document.getElementById('msg').style.display='block';
+  }
+ });
+ obs=obs.filter(o=>o.y<500);
+ if(score%80==0 && score>0){ current++; updateMap(); speed+=0.3 }
+ score++; document.getElementById('score').innerText=score+" KM";
+
+ // bike
+ ctx.fillStyle='#fff'; ctx.shadowBlur=15; ctx.shadowColor='#a855f7';
+ ctx.fillRect(bike.x,400,36,60); ctx.fillStyle='#a855f7'; ctx.fillRect(bike.x+4,450,28,10); ctx.shadowBlur=0;
+
+ requestAnimationFrame(loop);
+}
+document.getElementById('l').ontouchstart=()=>keys.l=true; document.getElementById('l').ontouchend=()=>keys.l=false;
+document.getElementById('r').ontouchstart=()=>keys.r=true; document.getElementById('r').ontouchend=()=>keys.r=false;
+document.getElementById('l').onmousedown=()=>keys.l=true; document.getElementById('l').onmouseup=()=>keys.l=false;
+document.getElementById('r').onmousedown=()=>keys.r=true; document.getElementById('r').onmouseup=()=>keys.r=false;
+
+document.getElementById('msg').style.display='block';
+</script>
+</body>
+</html>
